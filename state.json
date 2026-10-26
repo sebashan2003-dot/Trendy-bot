@@ -1,17 +1,30 @@
 {
-  "products": {},
+  "products": {
+    "novaventa:/calendario-de-adviento-trendy-landia-53352/p": {
+      "key": "novaventa:/calendario-de-adviento-trendy-landia-53352/p",
+      "store": "Novaventa",
+      "name": "Calendario De Adviento Trendy Landia",
+      "link": "https://novaventa.com/calendario-de-adviento-trendy-landia-53352/p",
+      "image": "https://novaventa.com/_next/image?url=https%3A%2F%2Fstorage.googleapis.com%2Fcdn-novaventa%2Ftienda_virtual%2F2026%2Fimages%2Fc16%2F300%2F53352.webp&w=384&q=75",
+      "price": null,
+      "list_price": null,
+      "available": false,
+      "qty": null,
+      "description": "",
+      "release": ""
+    }
+  },
   "history": [
+    {
+      "t": "25/10/2026 11:40 PM",
+      "msg": "🆕 Producto nuevo publicado\n\nCalendario De Adviento Trendy Landia\nNovaventa\nPrecio: —\nEstado: ❌ Agotado / no disponible\nhttps://novaventa.com/calendario-de-adviento-trendy-landia-53352/p"
+    },
     {
       "t": "25/10/2026 10:56 PM",
       "msg": "Bot activado.\nAún no aparece el calendario 2026 en las tiendas."
     }
   ],
-  "failures": {
-    "Novaventa": {
-      "count": 1,
-      "error": "https://novaventa.com/api/catalog_system/pub/products/search?ft=calendario%20trendy&_from=0&_to=49: Expecting value: line 1 column 1 (char 0); https://novaventa.com/api/io/_v/api/intelligent-search/product_search/?query=calendario%20trendy&count=50: Expecting value: line 1 column 1 (char 0)"
-    }
-  },
+  "failures": {},
   "initialized": true,
-  "last_check": "25/10/2026 10:56 PM"
+  "last_check": "25/10/2026 11:40 PM"
 }
