@@ -48,6 +48,11 @@ STORES = [
         "base": "https://novaventa.com",
         "terms": ["calendario adviento trendy", "trendy landia", "calendario trendy"],
         "must_match_brand": True,  # Novaventa vende calendarios de otras marcas
+        # Si el catálogo no responde con datos, se lee directamente la página de estos productos.
+        # Para vigilar otro producto, agrega aquí su enlace (termina en /p).
+        "pages": [
+            "https://novaventa.com/calendario-de-adviento-trendy-landia-53352/p",
+        ],
     },
 ]
 
@@ -58,25 +63,40 @@ UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
 
 # --------------------------------------------------------------------------- red
 
-def http_get_json(url):
+class NotJSON(Exception):
+    """El servidor respondió, pero con una página web en vez de datos (no tiene sentido reintentar)."""
+
+
+def http_get(url, accept):
     mock = os.environ.get("MOCK_DIR")
     if mock:
         key = re.sub(r"[^a-z0-9]+", "_", url.lower())[-120:]
-        path = os.path.join(mock, key + ".json")
-        if not os.path.exists(path):
-            raise RuntimeError(f"sin mock para {url}")
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+        for ext in (".json", ".html"):
+            path = os.path.join(mock, key + ext)
+            if os.path.exists(path):
+                with open(path, encoding="utf-8") as f:
+                    return f.read()
+        raise RuntimeError(f"sin mock para {url}")
+    req = urllib.request.Request(url, headers={
+        "User-Agent": UA, "Accept": accept, "Accept-Language": "es-CO,es;q=0.9",
+    })
     last = None
     for attempt in range(3):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read().decode("utf-8"))
+                return r.read().decode("utf-8", errors="replace")
         except Exception as e:  # noqa: BLE001
             last = e
             time.sleep(3 * (attempt + 1))
     raise RuntimeError(f"{url}: {last}")
+
+
+def http_get_json(url):
+    text = http_get(url, "application/json")
+    try:
+        return json.loads(text)
+    except ValueError:
+        raise NotJSON(f"{url}: la respuesta no son datos JSON") from None
 
 
 def search_urls(base, term):
@@ -145,7 +165,7 @@ def normalize(raw, store):
     price = min(prices) if prices else None
     list_price = max(list_prices) if list_prices else None
     return {
-        "key": f"{store['id']}:{raw.get('productId') or link or name}",
+        "key": f"{store['id']}:{urllib.parse.urlparse(link).path.rstrip('/') if link else raw.get('productId') or name}",
         "store": store["name"],
         "name": name.strip(),
         "link": link,
@@ -159,12 +179,124 @@ def normalize(raw, store):
     }
 
 
+def _ld_objects(text):
+    """Extrae los objetos JSON-LD (datos estructurados schema.org) de una página."""
+    out = []
+    for block in re.findall(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', text, re.S | re.I):
+        try:
+            data = json.loads(html.unescape(block.strip()))
+        except ValueError:
+            continue
+        stack = [data]
+        while stack:
+            d = stack.pop()
+            if isinstance(d, list):
+                stack.extend(d)
+            elif isinstance(d, dict):
+                out.append(d)
+                if "@graph" in d:
+                    stack.append(d["@graph"])
+    return out
+
+
+def _meta(text, prop):
+    m = re.search(r'<meta[^>]+(?:property|name)=["\']%s["\'][^>]+content=["\']([^"\']*)' % re.escape(prop), text, re.I) \
+        or re.search(r'<meta[^>]+content=["\']([^"\']*)["\'][^>]+(?:property|name)=["\']%s["\']' % re.escape(prop), text, re.I)
+    return html.unescape(m.group(1)).strip() if m else ""
+
+
+def _num(v):
+    if v is None:
+        return None
+    s = str(v).strip()
+    if re.fullmatch(r"\d{1,3}(\.\d{3})+", s):  # formato colombiano 124.900
+        s = s.replace(".", "")
+    return to_price(s)
+
+
+def parse_product_page(text, url, store):
+    """Lee nombre, precio y disponibilidad de la página HTML de un producto."""
+    low = text[:5000].lower()
+    if "just a moment" in low or "cf-challenge" in low or "captcha" in low:
+        raise RuntimeError(f"{url}: la tienda bloqueó la consulta automática")
+
+    name = desc = image = ""
+    price = list_price = None
+    available = None
+    for d in _ld_objects(text):
+        t = d.get("@type")
+        if t != "Product" and not (isinstance(t, list) and "Product" in t):
+            continue
+        name = d.get("name") or name
+        desc = d.get("description") or desc
+        img = d.get("image")
+        image = (img[0] if isinstance(img, list) and img else img if isinstance(img, str) else "") or image
+        offers = d.get("offers") or {}
+        offers = offers if isinstance(offers, list) else [offers]
+        for o in offers:
+            if not isinstance(o, dict):
+                continue
+            inner = o.get("offers")
+            items = (inner if isinstance(inner, list) else [inner]) if inner else [o]
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                p = _num(it.get("price")) or _num(it.get("lowPrice"))
+                if p:
+                    price = p if price is None else min(price, p)
+                hp = _num(it.get("highPrice"))
+                if hp and price and hp > price:
+                    list_price = hp
+                av = str(it.get("availability", ""))
+                if av:
+                    available = bool(available) or ("instock" in av.lower() or "preorder" in av.lower())
+            if not price:
+                price = _num(o.get("lowPrice"))
+        break
+
+    name = name or _meta(text, "og:title")
+    price = price or _num(_meta(text, "product:price:amount"))
+    if available is None:
+        av = (_meta(text, "product:availability") or _meta(text, "og:availability")).lower()
+        if av:
+            available = "instock" in av.replace(" ", "") or av in ("in stock", "available", "disponible")
+    if available is None:
+        # último recurso: textos típicos de la página
+        if re.search(r"agotad|no disponible|sin stock|avísame cuando", text, re.I):
+            available = False
+        elif re.search(r"agregar al carrito|añadir al carrito|comprar ahora", text, re.I):
+            available = True
+    if not name:
+        raise RuntimeError(f"{url}: no se pudo leer el producto de la página")
+
+    return {
+        "key": f"{store['id']}:{urllib.parse.urlparse(url).path.rstrip('/')}",
+        "store": store["name"],
+        "name": clean_text(name),
+        "link": url,
+        "image": image or _meta(text, "og:image"),
+        "price": price,
+        "list_price": list_price,
+        "available": bool(available),
+        "qty": None,
+        "description": clean_text(desc or _meta(text, "og:description"))[:1500],
+        "release": "",
+    }
+
+
 def fetch_store(store):
     found, errors, any_ok = {}, [], False
+    dead = set()  # endpoints que respondieron con HTML: no sirven en esta tienda
     for term in store["terms"]:
-        for url in search_urls(store["base"], term):
+        for i, url in enumerate(search_urls(store["base"], term)):
+            if i in dead:
+                continue
             try:
                 data = http_get_json(url)
+            except NotJSON as e:
+                dead.add(i)
+                errors.append(str(e))
+                continue
             except Exception as e:  # noqa: BLE001
                 errors.append(str(e))
                 continue
@@ -175,6 +307,19 @@ def fetch_store(store):
                 if p:
                     found[p["key"]] = p
             break  # este término ya respondió; no hace falta el respaldo
+
+    # Respaldo: leer directamente las páginas de producto conocidas
+    for url in store.get("pages", []):
+        key = f"{store['id']}:{urllib.parse.urlparse(url).path.rstrip('/')}"
+        if key in found:
+            continue
+        try:
+            p = parse_product_page(http_get(url, "text/html"), url, store)
+            found[p["key"]] = p
+            any_ok = True
+        except Exception as e:  # noqa: BLE001
+            errors.append(str(e))
+
     if not any_ok:
         raise RuntimeError("; ".join(errors[-2:]) or "sin respuesta")
     return found
@@ -273,6 +418,9 @@ def render_page(state):
         banner = ("warn", "Publicado, pero sin stock en este momento")
     else:
         banner = ("idle", "Aún no aparece el calendario 2026 en las tiendas")
+    failed = [s for s, v in state.get("failures", {}).items() if v.get("count")]
+    if failed:
+        banner = (banner[0], banner[1] + f" · ⚠️ No se pudo revisar: {', '.join(failed)}")
 
     cards = []
     for p in products:
@@ -410,6 +558,9 @@ def main():
     if not state.get("initialized"):
         if ok_stores:
             lines = [describe(p) for p in comparable_new.values()] or ["Aún no aparece el calendario 2026 en las tiendas."]
+            failed = [s["name"] for s in STORES if s["name"] not in ok_stores]
+            if failed:
+                lines.append(f"⚠️ No se pudo revisar: {', '.join(failed)} (se reintentará en la próxima revisión).")
             msg = "🤖 Bot del Calendario Trendy activado.\nEstado actual:\n\n" + "\n\n".join(lines)
             send_telegram(msg)
             state["history"].insert(0, {"t": state["last_check"], "msg": "Bot activado.\n" + "\n\n".join(lines)})
