@@ -1,0 +1,39 @@
+name: Rastreo calendario Trendy
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rastreo
+  cancel-in-progress: false
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Revisar tiendas y avisar
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+          PAGE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: python check.py
+
+      - name: Guardar estado y página
+        run: |
+          git config user.name "trendy-bot"
+          git config user.email "trendy-bot@users.noreply.github.com"
+          git add state.json docs/index.html
+          git diff --cached --quiet || git commit -m "Revisión $(TZ=America/Bogota date '+%d/%m %H:%M')"
+          git push
