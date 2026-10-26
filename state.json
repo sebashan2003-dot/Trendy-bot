@@ -1,0 +1,17 @@
+{
+  "products": {},
+  "history": [
+    {
+      "t": "25/10/2026 10:56 PM",
+      "msg": "Bot activado.\nAún no aparece el calendario 2026 en las tiendas."
+    }
+  ],
+  "failures": {
+    "Novaventa": {
+      "count": 1,
+      "error": "https://novaventa.com/api/catalog_system/pub/products/search?ft=calendario%20trendy&_from=0&_to=49: Expecting value: line 1 column 1 (char 0); https://novaventa.com/api/io/_v/api/intelligent-search/product_search/?query=calendario%20trendy&count=50: Expecting value: line 1 column 1 (char 0)"
+    }
+  },
+  "initialized": true,
+  "last_check": "25/10/2026 10:56 PM"
+}
