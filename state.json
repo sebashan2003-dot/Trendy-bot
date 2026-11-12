@@ -1,18 +1,5 @@
 {
   "products": {
-    "trendy:/calendario-de-adviento-2026-wonderland-b/p": {
-      "key": "trendy:/calendario-de-adviento-2026-wonderland-b/p",
-      "store": "Trendy (tienda oficial)",
-      "name": "Calendario de Adviento Wonderland – Edición Luxury",
-      "link": "https://www.maquillajetrendyshop.com/calendario-de-adviento-2026-wonderland-b/p",
-      "image": "https://b2ctrendy.vteximg.com.br/arquivos/ids/164487/foto-3.jpg?v=639298401512770000",
-      "price": 200000,
-      "list_price": null,
-      "available": true,
-      "qty": 1,
-      "description": "Calendario de Adviento Wonderland – Edición Luxury ¡Nuestro Calendario de Adviento 2026 ya está aquí! Dale la bienvenida a Wonderland. Esta vez decidimos hacer una edición Luxury del Calendario de Adviento, hecho para ti. Trae 14 productos sorpresa entre maquillaje, skincare y accesorios, con fórmulas nuevas, acabados increíbles y productos de alta calidad. Todo inspirado en el color de temporada: el borgoña. Y cuando abras la última sorpresa, todavía te queda el baúl. Es tipo cuero, color borgoña y con cremallera dorada, perfecto para guardar tu maquillaje, organizar tus esenciales o dejarlo a la vista, porque se ve divino. Tal vez aquí está tu próximo favorito. Tal vez son los 14 o los 15 con el baúl.",
-      "release": "2026-10-29T00:00:00Z"
-    },
     "novaventa:/calendario-de-adviento-trendy-landia-53352/p": {
       "key": "novaventa:/calendario-de-adviento-trendy-landia-53352/p",
       "store": "Novaventa",
@@ -28,6 +15,10 @@
     }
   },
   "history": [
+    {
+      "t": "12/11/2026 03:59 PM",
+      "msg": "👻 Ya no aparece en el catálogo: Calendario de Adviento Wonderland – Edición Luxury (Trendy (tienda oficial))"
+    },
     {
       "t": "10/11/2026 02:07 PM",
       "msg": "🚨 ¡YA SE PUEDE COMPRAR!\n\nCalendario de Adviento Wonderland – Edición Luxury\nTrendy (tienda oficial)\nPrecio: $200.000\nEstado: ✅ DISPONIBLE (1 unid.)\nhttps://www.maquillajetrendyshop.com/calendario-de-adviento-2026-wonderland-b/p"
@@ -47,5 +38,5 @@
   ],
   "failures": {},
   "initialized": true,
-  "last_check": "12/11/2026 02:09 PM"
+  "last_check": "12/11/2026 03:59 PM"
 }
