@@ -9,7 +9,7 @@
       "price": 200000,
       "list_price": null,
       "available": true,
-      "qty": 4198,
+      "qty": 6,
       "description": "Calendario de Adviento Wonderland – Edición Luxury ¡Nuestro Calendario de Adviento 2026 ya está aquí! Dale la bienvenida a Wonderland. Esta vez decidimos hacer una edición Luxury del Calendario de Adviento, hecho para ti. Trae 14 productos sorpresa entre maquillaje, skincare y accesorios, con fórmulas nuevas, acabados increíbles y productos de alta calidad. Todo inspirado en el color de temporada: el borgoña. Y cuando abras la última sorpresa, todavía te queda el baúl. Es tipo cuero, color borgoña y con cremallera dorada, perfecto para guardar tu maquillaje, organizar tus esenciales o dejarlo a la vista, porque se ve divino. Tal vez aquí está tu próximo favorito. Tal vez son los 14 o los 15 con el baúl.",
       "release": "2026-10-29T00:00:00Z"
     },
@@ -55,5 +55,5 @@
   ],
   "failures": {},
   "initialized": true,
-  "last_check": "13/11/2026 08:16 PM"
+  "last_check": "13/11/2026 09:59 PM"
 }
